@@ -5,6 +5,8 @@
 ## Features
 
 - Sync ข้อมูลอัตโนมัติทุก 2 นาที
+- ตรวจสอบความถูกต้องของข้อมูล (Balance Check) ทุกวัน เวลา 00:02 และ 12:02
+- แจ้งเตือนผ่าน Telegram เมื่อพบความผิดปกติ
 - รองรับหลายตารางพร้อมกัน
 - รองรับ Filters และ Options
 - แสดง Log รายละเอียดการทำงาน
@@ -36,6 +38,10 @@ OFFLINE_DB_PORT=3306
 OFFLINE_DB_USER=root
 OFFLINE_DB_PASSWORD=yourpassword
 OFFLINE_DB_NAME=offline_db
+
+# Telegram Notification
+TOKEN=your_telegram_bot_token
+CHAT_ID=your_chat_id
 ```
 
 ## กำหนดค่าการ Sync
