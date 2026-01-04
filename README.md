@@ -4,11 +4,11 @@
 
 ## Features
 
-- ✅ Sync ข้อมูลอัตโนมัติทุก 2 นาที
-- ✅ รองรับหลายตารางพร้อมกัน
-- ✅ รองรับ Filters และ Options
-- ✅ แสดง Log รายละเอียดการทำงาน
-- ✅ Health Check Endpoint (GET /)
+- Sync ข้อมูลอัตโนมัติทุก 2 นาที
+- รองรับหลายตารางพร้อมกัน
+- รองรับ Filters และ Options
+- แสดง Log รายละเอียดการทำงาน
+- Health Check Endpoint (GET /)
 
 ## ติดตั้ง Dependencies
 
