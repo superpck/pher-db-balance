@@ -1,10 +1,10 @@
 # DB Balance2 - Master to Offline Database Sync
 
-โปรเจค Node.js Cron Job สำหรับ sync ข้อมูลจาก Master Database ไปยัง Offline Server อัตโนมัติทุก 1 นาที โดยใช้ Knex และ MySQL2
+โปรเจค Node.js Cron Job สำหรับ sync ข้อมูลจาก Master Database ไปยัง Offline Server อัตโนมัติทุก 2 นาที โดยใช้ Knex และ MySQL2
 
 ## Features
 
-- ✅ Sync ข้อมูลอัตโนมัติทุก 1 นาที
+- ✅ Sync ข้อมูลอัตโนมัติทุก 2 นาที
 - ✅ รองรับหลายตารางพร้อมกัน
 - ✅ รองรับ Filters และ Options
 - ✅ แสดง Log รายละเอียดการทำงาน
