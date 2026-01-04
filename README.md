@@ -1,4 +1,4 @@
-# DB Balance2 - Master to Offline Database Sync
+# PHER DB Balance - Master to Offline Database Sync
 
 โปรเจค Node.js Cron Job สำหรับ sync ข้อมูลจาก Master Database ไปยัง Offline Server อัตโนมัติทุก 2 นาที โดยใช้ Knex และ MySQL2
 
