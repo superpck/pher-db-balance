@@ -73,7 +73,8 @@ npm run dev
 
 ### Production Mode
 ```bash
-npm start
+  - npm start or
+  - pm2 start src/index.js --name "db-balance"
 ```
 
 Cron Job จะทำงานอัตโนมัติทุก 1 นาที และแสดง Log ในคอนโซล
