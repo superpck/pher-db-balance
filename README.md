@@ -87,6 +87,7 @@ curl http://localhost:3000/
   "message": "DB Sync Cron Job is active",
   "timestamp": "2026-01-03T10:00:00.000Z"
 }
+```
 
 ## Project Structure
 
@@ -161,3 +162,4 @@ fetch('http://localhost:3000/api/sync/compare/users')
   Total tables: 1
   Successful: 1
   Failed: 0
+```
