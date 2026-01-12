@@ -22,30 +22,32 @@ app.get('/', (req, res) => {
 const startCronJob = async () => {
   try {
     console.log('\n🚀 Starting DB Sync Cron Job...');
-    
+
     // Test database connections
     await testConnections();
-    
+
     // Setup cron job - ทำงานทุก 2 นาที
     cron.schedule('*/2 * * * *', async () => {
       console.log('\n⏰ Running scheduled sync...');
       await runScheduledSync();
     });
-    
-    // Setup balance check - ทำงานทุกวันเวลา 00:02 และ 12:02
-    cron.schedule('10 2 0,12 * * *', async () => {
+
+    // Report balance checking - ทำงานทุกวันเวลา 00:02 และ 12:02
+    cron.schedule('10 3 0,12 * * *', async () => {
       console.log('\n📊 Running balance check...');
-      await checkBalance();
+      runScheduledSync().then(async () => {
+        await checkBalance();
+      });
     });
-    
+
     // Start Express server for health check
     app.listen(PORT, () => {
       console.log(`📍 Health check: http://localhost:${PORT}/`);
-      console.log('⏰ Sync job scheduled: Every BACKWARD_MINUTE config');
+      console.log(`⏰ Sync job scheduled: Every 2 Minutes, Backward data: ${process.env.BACKWARD_MINUTE} minutes`);
       console.log('📊 Balance check scheduled: Daily at 00:02 and 12:02');
       console.log('✓ System is running. Press Ctrl+C to stop.\n');
     });
-    
+
   } catch (error) {
     console.error('Failed to start cron job:', error);
     process.exit(1);

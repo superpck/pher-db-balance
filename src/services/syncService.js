@@ -203,21 +203,38 @@ const upsertToOffline = async (databaseName, tableName, data, refColumn = 'ref')
  * Sync ตาราง iswin.is โดยใช้ updateColumn ย้อนหลัง BACKWARD_MINUTE นาที และ upsert ตาม ref
  */
 const syncIswinWithUpsert = async (config) => {
+  // ตรวจสอบ connection ก่อนใช้งาน
+  await ensureConnection(masterDb, 'Master DB');
+  await ensureConnection(offlineDb, 'Offline DB');
+
+  if (['isdb_log', 'iswin'].includes(config.databaseName) && ['is_patient','is'].includes(config.table) && ['12:00','23:58'].includes(dayjs().format('HH:mm'))) {
+    // ตรวจสอบย้อนหลัง 2 วัน ทุก 23:00 น.
+    let startDate = dayjs().subtract(2, 'day').format('YYYY-MM-DD') + ' 00:00:00';
+    const finishDate = dayjs().subtract(BACKWARD_MINUTE, 'minute').format('YYYY-MM-DD HH:mm:ss');
+    let results = [];
+    do {
+      const endDate = dayjs(startDate).add(2, 'hours').format('YYYY-MM-DD HH:mm:ss');
+      const result = await syncData(config, startDate, endDate);
+      results.push(result);
+      startDate = dayjs(startDate).add(2, 'hours').format('YYYY-MM-DD HH:mm:ss');
+    } while (startDate < finishDate);
+    return results;
+  } else {
+    // คำนวณเวลาย้อนหลัง BACKWARD_MINUTE นาที
+    const startDate = dayjs().subtract(BACKWARD_MINUTE, 'minute').format('YYYY-MM-DD HH:mm:ss');
+    const endDate = dayjs().format('YYYY-MM-DD HH:mm:ss');
+    return await syncData(config, startDate, endDate);
+  }
+}
+
+const syncData = async (config, startDate, endDate) => {
   //config.databaseName, config.table, config.refColumn, config.updateColumn
   try {
-    // ตรวจสอบ connection ก่อนใช้งาน
-    await ensureConnection(masterDb, 'Master DB');
-    await ensureConnection(offlineDb, 'Offline DB');
-
-    // คำนวณเวลาย้อนหลัง BACKWARD_MINUTE นาที
-    const fiveMinutesAgo = dayjs().subtract(BACKWARD_MINUTE, 'minute');
-    const formattedDate = fiveMinutesAgo.format('YYYY-MM-DD HH:mm:ss');
-
-    console.log(`  → Reading from ${config.databaseName}.${config.table} where ${config.updateColumn} >= '${formattedDate}'`);
+    console.log(`  → Reading from ${config.databaseName}.${config.table} where ${config.updateColumn} '${startDate}' to '${endDate}'`);
 
     // // อ่านข้อมูลจาก Master ที่ updateColumn ย้อนหลัง BACKWARD_MINUTE นาที
     let masterData = await masterDb(`${config.databaseName}.${config.table}`)
-      .where(config.updateColumn, '>=', formattedDate)
+      .whereBetween(config.updateColumn, [startDate, endDate])
       .select('*');
 
     if (masterData.length === 0) {
