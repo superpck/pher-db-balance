@@ -209,14 +209,15 @@ const syncIswinWithUpsert = async (config) => {
 
   if (['isdb_log', 'iswin'].includes(config.databaseName) && ['is_patient','is'].includes(config.table) && ['12:00','23:58'].includes(dayjs().format('HH:mm'))) {
     // ตรวจสอบย้อนหลัง 2 วัน ทุก 23:00 น.
+    const columnName = config.databaseName == 'iswin' && config.table == 'is' ? 'adate' : config.updateColumn;
     let startDate = dayjs().subtract(2, 'day').format('YYYY-MM-DD') + ' 00:00:00';
     const finishDate = dayjs().subtract(BACKWARD_MINUTE, 'minute').format('YYYY-MM-DD HH:mm:ss');
     let results = [];
     do {
-      const endDate = dayjs(startDate).add(2, 'hours').format('YYYY-MM-DD HH:mm:ss');
-      const result = await syncData(config, startDate, endDate);
+      const endDate = dayjs(startDate).add(4, 'hours').format('YYYY-MM-DD HH:mm:ss');
+      const result = await syncData(config, startDate, endDate, columnName);
       results.push(result);
-      startDate = dayjs(startDate).add(2, 'hours').format('YYYY-MM-DD HH:mm:ss');
+      startDate = dayjs(startDate).add(4, 'hours').format('YYYY-MM-DD HH:mm:ss');
     } while (startDate < finishDate);
     return results;
   } else {
@@ -227,14 +228,15 @@ const syncIswinWithUpsert = async (config) => {
   }
 }
 
-const syncData = async (config, startDate, endDate) => {
+const syncData = async (config, startDate, endDate, columnName='') => {
   //config.databaseName, config.table, config.refColumn, config.updateColumn
   try {
-    console.log(`  → Reading from ${config.databaseName}.${config.table} where ${config.updateColumn} '${startDate}' to '${endDate}'`);
+    columnName = columnName || config.updateColumn;
+    console.log(`  → Reading from ${config.databaseName}.${config.table} where ${columnName} '${startDate}' to '${endDate}'`);
 
     // // อ่านข้อมูลจาก Master ที่ updateColumn ย้อนหลัง BACKWARD_MINUTE นาที
     let masterData = await masterDb(`${config.databaseName}.${config.table}`)
-      .whereBetween(config.updateColumn, [startDate, endDate])
+      .whereBetween(columnName, [startDate, endDate])
       .select('*');
 
     if (masterData.length === 0) {
@@ -294,14 +296,14 @@ const syncData = async (config, startDate, endDate) => {
 const deleteIswinFromLog = async (tableName = 'is', refColumn = 'ref') => {
   try {
     // คำนวณเวลาย้อนหลัง BACKWARD_MINUTE นาที
-    const tenMinutesAgo = dayjs().subtract(BACKWARD_MINUTE, 'minute');
-    const formattedDate = tenMinutesAgo.format('YYYY-MM-DD HH:mm:ss');
+    const startDate = dayjs().subtract(BACKWARD_MINUTE, 'minute').format('YYYY-MM-DD HH:mm:ss');
+    const endDate = dayjs().format('YYYY-MM-DD HH:mm:ss');
 
-    console.log(`  → Reading DELETE logs from isdb_log.is_log where log_date >= '${formattedDate}'`);
+    console.log(`  → Reading DELETE logs from isdb_log.is_log where log_date '${startDate}' to '${endDate}'`);
 
     // อ่าน log จาก isdb_log.is_log ที่เป็น DELETE และ log_date ย้อนหลัง BACKWARD_MINUTE นาที
     const deleteLogs = await masterDb('isdb_log.is_log')
-      .where('log_date', '>=', formattedDate)
+      .whereBetween('log_date', [startDate, endDate])
       .where('log_type', 'DELETE')
       .select('ref');
 
