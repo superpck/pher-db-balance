@@ -58,9 +58,9 @@ const checkBalance = async () => {
   console.log(`\n[${startTime.format('YYYY-MM-DD HH:mm:ss')}] 📊 Starting balance check...`);
 
   try {
-    // คำนวณช่วงเวลา 7 วันย้อนหลัง
-    const endDate = dayjs().format('YYYY-MM-DD HH:mm:ss');
-    const startDate = dayjs().subtract(7, 'day').format('YYYY-MM-DD') + ' 00:00:00';
+    // คำนวณช่วงเวลา 7 วันย้อนหลัง (ควร run node-cron ก่อน 3 นาที เช่น 00:02, 12:02)
+    const endDate = dayjs().subtract(123, 'seconds').format('YYYY-MM-DD HH:mm:ss');
+    const startDate = dayjs(endDate).subtract(7, 'day').startOf('day').format('YYYY-MM-DD HH:mm:ss');
 
     console.log(`  → Checking cases from ${startDate} to ${endDate}`);
 
@@ -71,7 +71,7 @@ const checkBalance = async () => {
     ]);
 
     // สร้าง map สำหรับเปรียบเทียบ
-    const masterMap = new Map(masterCounts.map(item => [ dayjs(item.accdate).format('DD/MM/YYYY'), parseInt(item.count)]));
+    const masterMap = new Map(masterCounts.map(item => [dayjs(item.accdate).format('DD/MM/YYYY'), parseInt(item.count)]));
     const offlineMap = new Map(offlineCounts.map(item => [dayjs(item.accdate).format('DD/MM/YYYY'), parseInt(item.count)]));
     // สร้างรายการวันที่ทั้งหมด 7 วัน
     const dates = [];

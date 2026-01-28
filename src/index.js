@@ -8,6 +8,8 @@ const { checkBalance } = require('./jobs/check_balance');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+// app.use(express.json());
+// app.use(express.urlencoded({ extended: true }));
 
 // Health check route only
 app.get('/', (req, res) => {
@@ -33,7 +35,7 @@ const startCronJob = async () => {
     });
 
     // Report balance checking - ทำงานทุกวันเวลา 00:02 และ 12:02
-    cron.schedule('10 3 0,12 * * *', async () => {
+    cron.schedule('0 2 0,12 * * *', async () => {
       console.log('\n📊 Running balance check...');
       runScheduledSync().then(async () => {
         await checkBalance();
