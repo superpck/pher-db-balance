@@ -59,7 +59,7 @@ const checkBalance = async () => {
 
   try {
     // คำนวณช่วงเวลา 7 วันย้อนหลัง (ควร run node-cron ก่อน 3 นาที เช่น 00:02, 12:02)
-    const endDate = dayjs().subtract(122, 'seconds').format('YYYY-MM-DD HH:mm:ss');
+    const endDate = dayjs().subtract(10, 'minutes').endOf('hour').format('YYYY-MM-DD HH:mm:ss');
     const startDate = dayjs(endDate).subtract(7, 'day').startOf('day').format('YYYY-MM-DD HH:mm:ss');
 
     console.log(`  → Checking cases from ${startDate} to ${endDate}`);
