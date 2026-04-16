@@ -1,7 +1,7 @@
 const dayjs = require('dayjs');
 const { masterDb, offlineDb, ensureConnection } = require('../config/database');
 const BACKWARD_MINUTE = process.env.BACKWARD_MINUTE || 20;
-const check7DayTime = ['22:30'];
+const check7DayTime = ['23:30'];
 
 /**
  * อ่านข้อมูลจาก Master Database
@@ -204,37 +204,49 @@ const upsertToOffline = async (databaseName, tableName, data, refColumn = 'ref')
  * Sync ตาราง iswin.is โดยใช้ updateColumn ย้อนหลัง BACKWARD_MINUTE นาที และ upsert ตาม ref
  */
 const syncIswinWithUpsert = async (config) => {
-  // ตรวจสอบ connection ก่อนใช้งาน
-  await ensureConnection(masterDb, 'Master DB');
-  await ensureConnection(offlineDb, 'Offline DB');
+  try {
+    // ตรวจสอบ connection ก่อนใช้งาน
+    await ensureConnection(masterDb, 'Master DB');
+    await ensureConnection(offlineDb, 'Offline DB');
 
-  if (['isdb_log', 'iswin'].includes(config.databaseName)
-    && ['is_patient', 'is'].includes(config.table)
-    && (['56'].includes(dayjs().format('mm')) || check7DayTime.includes(dayjs().format('HH:mm')))
-  ) {
-    // ตรวจสอบย้อนหลัง 2 วัน ทุก 23:00 น.
-    const columnName = config.databaseName == 'iswin' && config.table == 'is' ? 'adate' : config.updateColumn;
-    let startDate;
-    if (check7DayTime.includes(dayjs().format('HH:mm'))) {
-      startDate = dayjs().subtract(1, 'month').startOf('day').format('YYYY-MM-DD HH:mm:ss');
-      // startDate = dayjs().subtract(7, 'day').startOf('day').format('YYYY-MM-DD HH:mm:ss');
+    if (['isdb_log', 'iswin'].includes(config.databaseName)
+      && ['is_patient', 'is'].includes(config.table)
+      && (['56'].includes(dayjs().format('mm')) || check7DayTime.includes(dayjs().format('HH:mm')))
+    ) {
+      // ตรวจสอบย้อนหลัง 2-7 วัน
+      const columnName = config.databaseName == 'iswin' && config.table == 'is' ? 'adate' : config.updateColumn;
+
+      let startDate;
+      let finishDate = dayjs().subtract(BACKWARD_MINUTE, 'minute').format('YYYY-MM-DD HH:mm:ss');
+
+      if (check7DayTime.includes(dayjs().format('HH:mm'))) {
+        startDate = dayjs().subtract(7, 'day').startOf('day').format('YYYY-MM-DD HH:mm:ss');
+        // startDate = dayjs().subtract(1, 'month').startOf('day').format('YYYY-MM-DD HH:mm:ss');
+        // finishDate = dayjs(startDate).add(1, 'month').endOf('day').format('YYYY-MM-DD HH:mm:ss');
+      } else {
+        startDate = dayjs().subtract(2, 'day').startOf('day').format('YYYY-MM-DD HH:mm:ss');
+      }
+
+      let results = [];
+      do {
+        const endDate = dayjs(startDate).add(4, 'hours').format('YYYY-MM-DD HH:mm:ss');
+        const result = await syncData(config, startDate, endDate, columnName);
+        results.push(result);
+        startDate = endDate;
+      } while (startDate < finishDate);
+      return results;
     } else {
-      startDate = dayjs().subtract(2, 'day').startOf('day').format('YYYY-MM-DD HH:mm:ss');
+      // คำนวณเวลาย้อนหลัง BACKWARD_MINUTE นาที
+      const startDate = dayjs().subtract(BACKWARD_MINUTE, 'minute').format('YYYY-MM-DD HH:mm:ss');
+      const endDate = dayjs().format('YYYY-MM-DD HH:mm:ss');
+      return await syncData(config, startDate, endDate);
     }
-    const finishDate = dayjs().subtract(BACKWARD_MINUTE, 'minute').format('YYYY-MM-DD HH:mm:ss');
-    let results = [];
-    do {
-      const endDate = dayjs(startDate).add(4, 'hours').format('YYYY-MM-DD HH:mm:ss');
-      const result = await syncData(config, startDate, endDate, columnName);
-      results.push(result);
-      startDate = endDate;
-    } while (startDate < finishDate);
-    return results;
-  } else {
-    // คำนวณเวลาย้อนหลัง BACKWARD_MINUTE นาที
-    const startDate = dayjs().subtract(BACKWARD_MINUTE, 'minute').format('YYYY-MM-DD HH:mm:ss');
-    const endDate = dayjs().format('YYYY-MM-DD HH:mm:ss');
-    return await syncData(config, startDate, endDate);
+  } catch (error) {
+    console.log('Error syncing iswin data with upsert:', error.message || error);
+    return {
+      success: false,
+      error: error.message
+    };
   }
 }
 
@@ -310,7 +322,7 @@ const deleteIswinFromLog = async (tableName = 'is', refColumn = 'ref') => {
 
     let startDate;
     if (check7DayTime.includes(dayjs().format('HH:mm'))) {
-      startDate = dayjs().subtract(7, 'days').format('YYYY-MM-DD HH:mm:ss');
+      startDate = dayjs().subtract(7, 'days').startOf('day').format('YYYY-MM-DD HH:mm:ss');
     } else {
       startDate = dayjs().subtract(BACKWARD_MINUTE, 'minute').format('YYYY-MM-DD HH:mm:ss');
     }
