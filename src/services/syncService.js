@@ -1,7 +1,7 @@
 const dayjs = require('dayjs');
 const { masterDb, offlineDb, ensureConnection } = require('../config/database');
 const BACKWARD_MINUTE = process.env.BACKWARD_MINUTE || 20;
-const check7DayTime = '22:58';
+const check7DayTime = ['22:30'];
 
 /**
  * อ่านข้อมูลจาก Master Database
@@ -210,12 +210,12 @@ const syncIswinWithUpsert = async (config) => {
 
   if (['isdb_log', 'iswin'].includes(config.databaseName)
     && ['is_patient', 'is'].includes(config.table)
-    && (['56'].includes(dayjs().format('mm')) || [check7DayTime].includes(dayjs().format('HH:mm')))
+    && (['56'].includes(dayjs().format('mm')) || check7DayTime.includes(dayjs().format('HH:mm')))
   ) {
     // ตรวจสอบย้อนหลัง 2 วัน ทุก 23:00 น.
     const columnName = config.databaseName == 'iswin' && config.table == 'is' ? 'adate' : config.updateColumn;
     let startDate;
-    if (dayjs().format('HH:mm') === check7DayTime) {
+    if (check7DayTime.includes(dayjs().format('HH:mm'))) {
       startDate = dayjs().subtract(1, 'month').startOf('day').format('YYYY-MM-DD HH:mm:ss');
       // startDate = dayjs().subtract(7, 'day').startOf('day').format('YYYY-MM-DD HH:mm:ss');
     } else {
@@ -309,7 +309,7 @@ const deleteIswinFromLog = async (tableName = 'is', refColumn = 'ref') => {
     const endDate = dayjs().format('YYYY-MM-DD HH:mm:ss');
 
     let startDate;
-    if (dayjs().format('HH:mm') === check7DayTime) {
+    if (check7DayTime.includes(dayjs().format('HH:mm'))) {
       startDate = dayjs().subtract(7, 'days').format('YYYY-MM-DD HH:mm:ss');
     } else {
       startDate = dayjs().subtract(BACKWARD_MINUTE, 'minute').format('YYYY-MM-DD HH:mm:ss');
