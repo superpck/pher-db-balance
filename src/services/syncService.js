@@ -1,6 +1,7 @@
 const dayjs = require('dayjs');
 const { masterDb, offlineDb, ensureConnection } = require('../config/database');
 const BACKWARD_MINUTE = process.env.BACKWARD_MINUTE || 20;
+const check7DayTime = '22:58';
 
 /**
  * อ่านข้อมูลจาก Master Database
@@ -207,17 +208,26 @@ const syncIswinWithUpsert = async (config) => {
   await ensureConnection(masterDb, 'Master DB');
   await ensureConnection(offlineDb, 'Offline DB');
 
-  if (['isdb_log', 'iswin'].includes(config.databaseName) && ['is_patient','is'].includes(config.table) && ['12:00','23:58'].includes(dayjs().format('HH:mm'))) {
+  if (['isdb_log', 'iswin'].includes(config.databaseName)
+    && ['is_patient', 'is'].includes(config.table)
+    && (['56'].includes(dayjs().format('mm')) || [check7DayTime].includes(dayjs().format('HH:mm')))
+  ) {
     // ตรวจสอบย้อนหลัง 2 วัน ทุก 23:00 น.
     const columnName = config.databaseName == 'iswin' && config.table == 'is' ? 'adate' : config.updateColumn;
-    let startDate = dayjs().subtract(2, 'day').format('YYYY-MM-DD') + ' 00:00:00';
+    let startDate;
+    if (dayjs().format('HH:mm') === check7DayTime) {
+      startDate = dayjs().subtract(1, 'month').startOf('day').format('YYYY-MM-DD HH:mm:ss');
+      // startDate = dayjs().subtract(7, 'day').startOf('day').format('YYYY-MM-DD HH:mm:ss');
+    } else {
+      startDate = dayjs().subtract(2, 'day').startOf('day').format('YYYY-MM-DD HH:mm:ss');
+    }
     const finishDate = dayjs().subtract(BACKWARD_MINUTE, 'minute').format('YYYY-MM-DD HH:mm:ss');
     let results = [];
     do {
       const endDate = dayjs(startDate).add(4, 'hours').format('YYYY-MM-DD HH:mm:ss');
       const result = await syncData(config, startDate, endDate, columnName);
       results.push(result);
-      startDate = dayjs(startDate).add(4, 'hours').format('YYYY-MM-DD HH:mm:ss');
+      startDate = endDate;
     } while (startDate < finishDate);
     return results;
   } else {
@@ -228,7 +238,7 @@ const syncIswinWithUpsert = async (config) => {
   }
 }
 
-const syncData = async (config, startDate, endDate, columnName='') => {
+const syncData = async (config, startDate, endDate, columnName = '') => {
   //config.databaseName, config.table, config.refColumn, config.updateColumn
   try {
     columnName = columnName || config.updateColumn;
@@ -296,8 +306,14 @@ const syncData = async (config, startDate, endDate, columnName='') => {
 const deleteIswinFromLog = async (tableName = 'is', refColumn = 'ref') => {
   try {
     // คำนวณเวลาย้อนหลัง BACKWARD_MINUTE นาที
-    const startDate = dayjs().subtract(BACKWARD_MINUTE, 'minute').format('YYYY-MM-DD HH:mm:ss');
     const endDate = dayjs().format('YYYY-MM-DD HH:mm:ss');
+
+    let startDate;
+    if (dayjs().format('HH:mm') === check7DayTime) {
+      startDate = dayjs().subtract(7, 'days').format('YYYY-MM-DD HH:mm:ss');
+    } else {
+      startDate = dayjs().subtract(BACKWARD_MINUTE, 'minute').format('YYYY-MM-DD HH:mm:ss');
+    }
 
     console.log(`  → Reading DELETE logs from isdb_log.is_log where log_date '${startDate}' to '${endDate}'`);
 

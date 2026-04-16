@@ -21,6 +21,7 @@ app.get('/', (req, res) => {
 });
 
 // Start cron job and server
+let startSync = false;
 const startCronJob = async () => {
   try {
     console.log('\n🚀 Starting DB Sync Cron Job...');
@@ -30,12 +31,16 @@ const startCronJob = async () => {
 
     // Setup cron job - ทำงานทุก 2 นาที
     cron.schedule('*/2 * * * *', async () => {
-      console.log('\n⏰ Running scheduled sync...');
-      await runScheduledSync();
+      if (!startSync) {
+        startSync = true;
+        console.log('\n⏰ Running scheduled sync...');
+        await runScheduledSync();
+        startSync = false;
+      }
     });
 
     // Report balance checking - ทำงานทุกวันเวลา 00:02 และ 12:02
-    cron.schedule('0 2 0,12 * * *', async () => {
+    cron.schedule('58 11,23 * * *', async () => {
       console.log('\n📊 Running balance check...');
       runScheduledSync().then(async () => {
         await checkBalance();
